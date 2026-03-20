@@ -1,0 +1,22 @@
+# MaintainAI Server Logs Agent (client-side) configuration
+#
+# Copy to /etc/maintainai-agent.toml and edit values.
+
+[agent]
+name = "prod-server-1"
+poll_interval_ms = 500
+state_path = "/var/lib/maintainai-agent/state.json"
+
+[webhook]
+url = "${MAINTAINAI_WEBHOOK_URL}" # or set fixed URL here
+token = "${ACCESS_TOKEN}" # token can come from env var
+timeout_ms = 5000
+
+[filter]
+error_patterns = ["\\berror\\b","\\bfatal\\b","\\bpanic\\b","traceback"]
+warning_patterns = ["\\bwarn\\b","\\bwarning\\b","\\bdeprecated\\b"]
+ignore_patterns = ["healthcheck"]
+
+[logs]
+paths = ["/var/log/nginx/error.log","/var/log/syslog"]
+
