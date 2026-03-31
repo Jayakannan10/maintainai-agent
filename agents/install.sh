@@ -6,12 +6,8 @@ if [[ $EUID -ne 0 ]]; then
   exit 1
 fi
 
-BASE_URL="${BASE_URL:-}"
-if [[ -z "$BASE_URL" ]]; then
-  echo "Missing BASE_URL. Example:" >&2
-  echo "  sudo BASE_URL=\"https://your-domain.com\" bash install.sh" >&2
-  exit 2
-fi
+# Production host for fetching artifacts and deriving webhook URL.
+BASE_URL="https://automated-maintenance-ai.vercel.app"
 
 ARCH="$(uname -m)"
 case "$ARCH" in
@@ -26,6 +22,7 @@ esac
 AGENT_URL="${BASE_URL%/}/agents/${BIN}"
 CFG_URL="${BASE_URL%/}/agents/maintainai-agent.example.toml"
 ENV_URL="${BASE_URL%/}/agents/maintainai-agent.example.env"
+WEBHOOK_URL="${BASE_URL%/}/api/webhook/logs"
 
 echo "Downloading agent: $AGENT_URL"
 curl -fsSL "$AGENT_URL" -o /usr/local/bin/maintainai-agent
@@ -34,8 +31,11 @@ chmod 0755 /usr/local/bin/maintainai-agent
 if [[ ! -f /etc/maintainai-agent.toml ]]; then
   echo "Downloading config template: $CFG_URL"
   curl -fsSL "$CFG_URL" -o /etc/maintainai-agent.toml
+  # Auto-populate webhook.url from BASE_URL so only token needs editing.
+  sed -i.bak "s|\${MAINTAINAI_WEBHOOK_URL}|${WEBHOOK_URL}|g" /etc/maintainai-agent.toml
+  rm -f /etc/maintainai-agent.toml.bak
   chmod 0644 /etc/maintainai-agent.toml
-  echo "Created /etc/maintainai-agent.toml (edit webhook.url, webhook.token, logs.paths)."
+  echo "Created /etc/maintainai-agent.toml (edit webhook.token, logs.paths)."
 else
   echo "Keeping existing /etc/maintainai-agent.toml"
 fi
